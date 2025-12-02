@@ -1,0 +1,22 @@
+<%- include('partials/header', { title: 'Edit Task' }) %>
+
+<div class="card">
+  <h2>Edit Task</h2>
+
+  <% if (errors && errors.length > 0) { %>
+    <div style="background:#ffebee;color:red;padding:12px;border-radius:6px;margin:15px 0;">
+      <% errors.forEach(e => { %><div><%= e.msg %></div><% }) %>
+    </div>
+  <% } %>
+
+  <form method="POST" action="/tasks/edit/<%= task.id %>">
+    <input type="text" name="title" value="<%= task.title %>" class="form-control" required>
+    <textarea name="description" class="form-control" rows="4"><%= task.description || '' %></textarea>
+    <input type="date" name="dueDate" value="<%= task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '' %>" class="form-control">
+    
+    <div style="margin-top:20px;text-align:center;">
+      <button type="submit" class="btn btn-success">Save Changes</button>
+      <a href="/tasks" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>

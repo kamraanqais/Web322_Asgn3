@@ -1,0 +1,7 @@
+<%- include('partials/header') %>
+<div class="card text-center">
+    <h2>Welcome, <%= user.username %>!</h2>
+    <p>Email: <%= user.email %></p>
+    <a href="/tasks" class="btn btn-primary">View Tasks</a>
+    <a href="/auth/logout" class="btn btn-secondary">Logout</a>
+</div>

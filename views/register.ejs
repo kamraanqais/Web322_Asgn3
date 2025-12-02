@@ -1,0 +1,17 @@
+<%- include('partials/header') %>
+<div class="card">
+    <h2>Register</h2>
+    <% if (errors && errors.length > 0) { %>
+        <ul style="color: red;">
+            <% errors.forEach(e => { %><li><%= e.msg %></li><% }) %>
+        </ul>
+    <% } %>
+    <form method="POST" action="/auth/register">
+        <input type="text" name="username" placeholder="Username" class="form-control" value="<%= userData ? userData.username : '' %>" required minlength="3">
+        <input type="email" name="email" placeholder="Email" class="form-control" value="<%= userData ? userData.email : '' %>" required>
+        <input type="password" name="password" placeholder="Password" class="form-control" required minlength="6">
+        <input type="password" name="confirmPassword" placeholder="Confirm Password" class="form-control" required>
+        <button type="submit" class="btn btn-purple">Register</button>
+    </form>
+    <p>Already have an account? <a href="/auth/login">Login</a></p>
+</div>

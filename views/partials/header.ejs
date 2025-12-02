@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <%= typeof title !== 'undefined' && title ? title + ' - ' : '' %>Task Manager
+    </title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0;">
+            <a href="/" style="color: white; font-size: 1.5rem; font-weight: bold; text-decoration: none;">
+                Task Manager
+            </a>
+            <div style="display: flex; gap: 20px; align-items: center;">
+                <% if (typeof user !== 'undefined' && user) { %>
+                    <a href="/dashboard" style="color: white; text-decoration: none;">Dashboard</a>
+                    <a href="/tasks" style="color: white; text-decoration: none;">Tasks</a>
+                    <a href="/auth/logout" class="btn btn-secondary">Logout</a>
+                <% } else { %>
+                    <a href="/auth/login" style="color: white; text-decoration: none;">Login</a>
+                    <a href="/auth/register" style="color: white; text-decoration: none;">Register</a>
+                <% } %>
+            </div>
+        </div>
+    </nav>
+    <div class="container">

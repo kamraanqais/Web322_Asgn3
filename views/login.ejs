@@ -1,0 +1,18 @@
+<%- include('partials/header', { title: 'Login' }) %>
+
+<div class="card">
+    <h2>Login</h2>
+    <% if (error) { %>
+        <div style="color: red; margin-bottom: 15px; background: #f8d7da; padding: 10px; border-radius: 6px; border: 1px solid #f5c6cb;">
+            <%= error %>
+        </div>
+    <% } %>
+    <form method="POST" action="/auth/login">
+        <input type="email" name="email" placeholder="Email" class="form-control" required value="<%= typeof email !== 'undefined' ? email : '' %>">
+        <input type="password" name="password" placeholder="Password" class="form-control" required>
+        <button type="submit" class="btn btn-primary">Login</button>
+    </form>
+    <div style="margin-top: 20px; text-align: center;">
+        <p>Don't have an account? <a href="/auth/register">Register</a></p>
+    </div>
+</div>

@@ -1,0 +1,75 @@
+<%- include('partials/header', { title: 'Tasks' }) %>
+
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <h2 style="margin: 0; color: #007bff; font-size: 1.8rem;">Your Tasks</h2>
+        <a href="/tasks/add" class="btn btn-primary">Add New Task</a>
+    </div>
+
+    <!-- Success message -->
+    <% if (typeof success !== 'undefined' && success) { %>
+        <div style="background:#d4edda;color:#155724;padding:12px;border-radius:8px;margin-bottom:16px;border:1px solid #c3e6cb;">
+            <%= success %>
+        </div>
+    <% } %>
+
+    <!-- Tasks list -->
+    <% if (tasks && tasks.length > 0) { %>
+        <% tasks.forEach(task => { %>
+            <div style="background:#fff;border:1px solid #e9ecef;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;">
+                    <div style="flex:1;">
+                        <div style="font-weight:600;font-size:1.2rem;margin-bottom:6px;">
+                            <%= task.title %>
+                        </div>
+                        <% if (task.description) { %>
+                            <div style="color:#6c757d;margin-bottom:6px;">
+                                <%= task.description %>
+                            </div>
+                        <% } %>
+                        <% if (task.dueDate) { %>
+                            <div style="color:#6c757d;font-size:0.9rem;margin-bottom:10px;">
+                                Due: <%= new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %>
+                            </div>
+                        <% } %>
+                        <span style="background:#fff3cd;color:#856404;padding:6px 12px;border-radius:20px;font-size:0.8rem;font-weight:600;">
+                            <%= task.status === 'completed' ? 'Completed' : 'Pending' %>
+                        </span>
+                    </div>
+
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <a href="/tasks/edit/<%= task.id %>" 
+                           style="background:#17a2b8;color:white;padding:8px 14px;border-radius:6px;text-decoration:none;font-size:0.9rem;">
+                            Edit
+                        </a>
+                        
+                        <form method="POST" action="/tasks/delete/<%= task.id %>" style="display:inline;margin:0;"
+                              onsubmit="return confirm('Delete this task permanently?')">
+                            <button type="submit" 
+                                    style="background:#dc3545;color:white;padding:8px 14px;border:none;border-radius:6px;font-size:0.9rem;cursor:pointer;">
+                                Delete
+                            </button>
+                        </form>
+                        
+                        <form method="POST" action="/tasks/status/<%= task.id %>" style="display:inline;margin:0;">
+                            <button type="submit" 
+                                    style="background:#28a745;color:white;padding:8px 14px;border:none;border-radius:6px;font-size:0.9rem;cursor:pointer;">
+                                <%= task.status === 'completed' ? 'Mark Pending' : 'Mark as Completed' %>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        <% }) %>
+    <% } else { %>
+        <p style="text-align:center;color:#6c757d;padding:40px 0;font-size:1.1rem;">
+            No tasks yet. Click <a href="/tasks/add" style="color:#007bff;">Add New Task</a> to create one!
+        </p>
+    <% } %>
+
+    <!-- Bottom buttons -->
+    <div style="display:flex;justify-content:space-between;margin-top:40px;">
+        <a href="/dashboard" class="btn btn-purple">Back to Dashboard</a>
+        <a href="/auth/logout" class="btn btn-secondary">Logout</a>
+    </div>
+</div>
