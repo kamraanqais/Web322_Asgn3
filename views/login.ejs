@@ -1,18 +1,21 @@
-<%- include('partials/header', { title: 'Login' }) %>
+<%- include('partials/header', {title: 'Login'}) %>
 
-<div class="card">
-    <h2>Login</h2>
-    <% if (error) { %>
-        <div style="color: red; margin-bottom: 15px; background: #f8d7da; padding: 10px; border-radius: 6px; border: 1px solid #f5c6cb;">
-            <%= error %>
-        </div>
-    <% } %>
-    <form method="POST" action="/auth/login">
-        <input type="email" name="email" placeholder="Email" class="form-control" required value="<%= typeof email !== 'undefined' ? email : '' %>">
-        <input type="password" name="password" placeholder="Password" class="form-control" required>
-        <button type="submit" class="btn btn-primary">Login</button>
-    </form>
-    <div style="margin-top: 20px; text-align: center;">
-        <p>Don't have an account? <a href="/auth/register">Register</a></p>
+<div style="max-width:400px; margin:0 auto; background:white; padding:40px; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,0.1);">
+  <% if (error) { %>
+    <div style="background:#fee2e2; color:#dc2626; padding:12px; border-radius:8px; margin-bottom:20px;"><%= error %></div>
+  <% } %>
+  <% if (success) { %>
+    <div style="background:#d1fae5; color:#059669; padding:12px; border-radius:8px; margin-bottom:20px;"><%= success %></div>
+  <% } %>
+
+  <form method="POST" action="/login">
+    <div style="margin-bottom:20px;">
+      <input type="email" name="email" placeholder="hello" required style="width:100%; padding:14px; border:2px solid #e5e7eb; border-radius:8px; font-size:1rem;" value="helloo@gmail.com">
     </div>
+    <div style="margin-bottom:20px;">
+      <input type="password" name="password" placeholder="••••••" required style="width:100%; padding:14px; border:2px solid #e5e7eb; border-radius:8px; font-size:1rem;">
+    </div>
+    <button type="submit" style="width:100%; background:#3b82f6; color:white; padding:14px; border:none; border-radius:8px; font-size:1rem; font-weight:600; cursor:pointer;">Login</button>
+  </form>
+  <p style="text-align:center; margin-top:20px;">Don't have an account? <a href="/register" style="color:#3b82f6;">Register</a></p>
 </div>

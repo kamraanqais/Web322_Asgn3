@@ -1,22 +1,64 @@
-<%- include('partials/header', { title: 'Edit Task' }) %>
+<%- include('partials/header') %>
 
-<div class="card">
-  <h2>Edit Task</h2>
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body p-5">
+          <h3 class="text-primary mb-4">Edit Task</h3>
 
-  <% if (errors && errors.length > 0) { %>
-    <div style="background:#ffebee;color:red;padding:12px;border-radius:6px;margin:15px 0;">
-      <% errors.forEach(e => { %><div><%= e.msg %></div><% }) %>
+          <form action="/tasks/edit/<%= task.id %>" method="POST">
+            <div class="mb-3">
+              <input 
+                type="text" 
+                name="title" 
+                value="<%= task.title %>" 
+                class="form-control form-control-lg rounded-3" 
+                required 
+                autofocus
+              >
+            </div>
+
+            <div class="mb-3">
+              <textarea 
+                name="description" 
+                class="form-control rounded-3" 
+                rows="4" 
+                placeholder="Description (optional)"
+              ><%= task.description || '' %></textarea>
+            </div>
+
+            <div class="mb-4">
+              <input 
+                type="date" 
+                name="dueDate" 
+                value="<%= task.dueDate && task.dueDate.toISOString ? task.dueDate.toISOString().split('T')[0] : '' %>"
+                class="form-control form-control-lg rounded-3"
+              >
+            </div>
+
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary btn-lg rounded-3">
+                Update Task
+              </button>
+              <a href="/tasks" class="btn btn-secondary rounded-3">
+                Cancel
+              </a>
+            </div>
+          </form>
+
+          <div class="text-center mt-4">
+            <small class="text-muted">
+              Status: 
+              <span class="badge <%= task.status === 'completed' ? 'bg-success' : 'bg-warning text-dark' %>">
+                <%= task.status %>
+              </span>
+            </small>
+          </div>
+        </div>
+      </div>
     </div>
-  <% } %>
-
-  <form method="POST" action="/tasks/edit/<%= task.id %>">
-    <input type="text" name="title" value="<%= task.title %>" class="form-control" required>
-    <textarea name="description" class="form-control" rows="4"><%= task.description || '' %></textarea>
-    <input type="date" name="dueDate" value="<%= task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '' %>" class="form-control">
-    
-    <div style="margin-top:20px;text-align:center;">
-      <button type="submit" class="btn btn-success">Save Changes</button>
-      <a href="/tasks" class="btn btn-secondary">Cancel</a>
-    </div>
-  </form>
+  </div>
 </div>
+
+<%- include('partials/footer') %>

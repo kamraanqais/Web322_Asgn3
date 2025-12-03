@@ -1,41 +1,54 @@
-<%- include('partials/header', { title: 'Add Task' }) %>
+<%- include('partials/header') %>
 
-<div class="card">
-    <h2>Add New Task</h2>
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body p-5">
+          <h3 class="text-primary mb-4">Add Task</h3>
 
-    <% if (typeof errors !== 'undefined' && errors && errors.length > 0) { %>
-        <div style="color: red; background: #f8d7da; padding: 12px; border-radius: 8px; margin: 15px 0; border: 1px solid #f5c6cb;">
-            <% errors.forEach(err => { %>
-                <div><%= err.msg || err %></div>
-            <% }) %>
+          <form action="/tasks/add" method="POST">
+            <div class="mb-3">
+              <input 
+                type="text" 
+                name="title" 
+                class="form-control form-control-lg rounded-3" 
+                placeholder="Title" 
+                required 
+                autofocus
+              >
+            </div>
+
+            <div class="mb-3">
+              <textarea 
+                name="description" 
+                class="form-control rounded-3" 
+                rows="4" 
+                placeholder="Description (optional)"
+              ></textarea>
+            </div>
+
+            <div class="mb-4">
+              <input 
+                type="date" 
+                name="dueDate" 
+                class="form-control form-control-lg rounded-3" 
+                placeholder="Due Date"
+              >
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg w-100 rounded-3">
+              Create Task
+            </button>
+          </form>
+
+          <div class="text-center mt-4">
+            <a href="/tasks" class="text-decoration-none text-primary">Back to Tasks</a>
+          </div>
         </div>
-    <% } %>
-
-    <form method="POST" action="/tasks/add">
-        <input 
-            type="text" 
-            name="title" 
-            placeholder="Task Title" 
-            class="form-control" 
-            value="<%= typeof taskData !== 'undefined' ? taskData.title || '' : '' %>" 
-            required 
-            minlength="3"
-        >
-        <textarea 
-            name="description" 
-            placeholder="Description (optional)" 
-            class="form-control" 
-            rows="3"
-        ><%= typeof taskData !== 'undefined' ? taskData.description || '' : '' %></textarea>
-        <input 
-            type="date" 
-            name="dueDate" 
-            class="form-control" 
-            value="<%= typeof taskData !== 'undefined' && taskData.dueDate ? new Date(taskData.dueDate).toISOString().split('T')[0] : '' %>"
-        >
-        <div style="margin-top: 20px; display: flex; gap: 12px; justify-content: center;">
-            <button type="submit" class="btn btn-primary">Add Task</button>
-            <a href="/tasks" class="btn btn-secondary">Cancel</a>
-        </div>
-    </form>
+      </div>
+    </div>
+  </div>
 </div>
+
+<%- include('partials/footer') %>

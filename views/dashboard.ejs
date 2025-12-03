@@ -1,7 +1,21 @@
-<%- include('partials/header') %>
-<div class="card text-center">
-    <h2>Welcome, <%= user.username %>!</h2>
-    <p>Email: <%= user.email %></p>
-    <a href="/tasks" class="btn btn-primary">View Tasks</a>
-    <a href="/auth/logout" class="btn btn-secondary">Logout</a>
+<%- include('partials/header', {title: 'Your Tasks'}) %>
+
+<div style="max-width:500px; margin:60px auto; background:white; padding:40px; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,0.1); text-align:center;">
+  <h2 style="color:#1e293b; margin-bottom:10px;">Welcome, helloo!</h2>
+  <p style="color:#64748b; margin-bottom:30px;">Email: helloo@gmail.com</p>
+  <div style="display:flex; gap:15px; justify-content:center;">
+    <a href="/tasks" style="background:#8b5cf6; color:white; padding:12px 24px; border-radius:8px; text-decoration:none; font-weight:600;">View Tasks</a>
+    <a href="/logout" style="background:#fef3c7; color:#92400e; padding:12px 24px; border-radius:8px; text-decoration:none; font-weight:600;">Logout</a>
+  </div>
+</div>
+
+<div style="max-width:500px; margin:40px auto; text-align:center;">
+  <div style="background:#dbeafe; padding:40px; border-radius:16px;">
+    <p style="color:#1e40af; font-size:1.2rem; margin:0;">No tasks yet. Add a new one!</p>
+  </div>
+</div>
+
+<div style="text-align:center; margin-top:40px;">
+  <a href="/tasks" style="background:#3b82f6; color:white; padding:12px 32px; border-radius:50px; text-decoration:none; font-weight:600;">Back to Dashboard</a>
+  <a href="/logout" style="margin-left:15px; background:#fecaca; color:#dc2626; padding:12px 32px; border-radius:50px; text-decoration:none; font-weight:600;">Logout</a>
 </div>

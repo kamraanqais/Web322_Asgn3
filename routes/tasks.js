@@ -1,92 +1,80 @@
-// routes/tasks.js — FINAL VERCEL + NEON (direct queries)
 const express = require('express');
-const { neon } = require('@neondatabase/serverless');
 const router = express.Router();
 
-const sql = neon(process.env.DATABASE_URL);
-
-const requireLogin = (req, res, next) => {
-  if (!req.session.user) return res.redirect('/auth/login');
-  next();
+const fixDate = (dateStr) => {
+  if (!dateStr || dateStr === '' || dateStr === 'Invalid date') return null;
+  const date = new Date(dateStr);
+  return isNaN(date.getTime()) ? null : date.toISOString().split('T')[0];
 };
-router.use(requireLogin);
 
 router.get('/', async (req, res) => {
   try {
-    const { rows } = await sql`
-      SELECT * FROM tasks WHERE "userId" = ${req.session.user.id} ORDER BY "createdAt" DESC
-    `;
-    res.render('tasks', { tasks: rows, success: req.query.success });
+    const Task = req.app.get('TaskModel');
+    const tasks = await Task.findAll({
+      where: { userId: req.session.user.id },
+      order: [['createdAt', 'DESC']]
+    });
+    res.render('tasks', { tasks, title: 'Your Tasks' });
   } catch (err) {
     console.error(err);
-    res.render('tasks', { tasks: [], error: 'Failed to load tasks' });
+    res.render('error', { title: 'Error', message: 'Failed to load tasks' });
   }
 });
 
-router.get('/add', (req, res) => {
-  res.render('add-task', { errors: [], taskData: {} });
-});
+router.get('/add', (req, res) => res.render('add-task', { title: 'Add Task' }));
 
 router.post('/add', async (req, res) => {
-  try {
-    await sql`
-      INSERT INTO tasks (title, description, "dueDate", "userId")
-      VALUES (${req.body.title}, ${req.body.description || null}, ${req.body.dueDate || null}, ${req.session.user.id})
-    `;
-    res.redirect('/tasks?success=Task created!');
-  } catch (err) {
-    console.error(err);
-    res.render('add-task', { errors: [{ msg: 'Failed to create task' }], taskData: req.body });
-  }
+  const Task = req.app.get('TaskModel');
+  let { title, description, dueDate } = req.body;
+
+  if (!title?.trim()) return res.redirect('/tasks?error=Title required');
+
+  await Task.create({
+    title: title.trim(),
+    description: description?.trim() || null,
+    dueDate: fixDate(dueDate),
+    status: 'pending',
+    userId: req.session.user.id
+  });
+  res.redirect('/tasks?success=Task added');
 });
 
 router.get('/edit/:id', async (req, res) => {
-  try {
-    const { rows } = await sql`
-      SELECT * FROM tasks WHERE id = ${req.params.id} AND "userId" = ${req.session.user.id}
-    `;
-    if (rows.length === 0) return res.redirect('/tasks');
-    res.render('edit-task', { task: rows[0], errors: [], taskData: rows[0] });
-  } catch (err) {
-    res.redirect('/tasks');
-  }
+  const Task = req.app.get('TaskModel');
+  const task = await Task.findOne({ where: { id: req.params.id, userId: req.session.user.id } });
+  if (!task) return res.redirect('/tasks?error=Task not found');
+  res.render('edit-task', { task, title: 'Edit Task' });
 });
 
 router.post('/edit/:id', async (req, res) => {
-  try {
-    await sql`
-      UPDATE tasks SET title = ${req.body.title}, description = ${req.body.description || null}, "dueDate" = ${req.body.dueDate || null}
-      WHERE id = ${req.params.id} AND "userId" = ${req.session.user.id}
-    `;
-    res.redirect('/tasks?success=Task updated!');
-  } catch (err) {
-    console.error(err);
-    const { rows } = await sql`
-      SELECT * FROM tasks WHERE id = ${req.params.id}
-    `;
-    res.render('edit-task', { task: rows[0] || {}, errors: [{ msg: 'Failed to update' }], taskData: req.body });
-  }
+  const Task = req.app.get('TaskModel');
+  let { title, description, dueDate } = req.body;
+
+  if (!title?.trim()) return res.redirect(`/tasks/edit/${req.params.id}?error=Title required`);
+
+  await Task.update(
+    {
+      title: title.trim(),
+      description: description?.trim() || null,
+      dueDate: fixDate(dueDate)
+    },
+    { where: { id: req.params.id, userId: req.session.user.id } }
+  );
+  res.redirect('/tasks?success=Task updated');
+});
+
+
+router.post('/delete/:id', async (req, res) => {
+  const Task = req.app.get('TaskModel');
+  await Task.destroy({ where: { id: req.params.id, userId: req.session.user.id } });
+  res.redirect('/tasks?success=Task deleted');
 });
 
 router.post('/status/:id', async (req, res) => {
-  try {
-    await sql`
-      UPDATE tasks SET status = CASE WHEN status = 'completed' THEN 'pending' ELSE 'completed' END
-      WHERE id = ${req.params.id} AND "userId" = ${req.session.user.id}
-    `;
-  } catch (err) {
-    console.error(err);
-  }
-  res.redirect('/tasks');
-});
-
-router.post('/delete/:id', async (req, res) => {
-  try {
-    await sql`
-      DELETE FROM tasks WHERE id = ${req.params.id} AND "userId" = ${req.session.user.id}
-    `;
-  } catch (err) {
-    console.error(err);
+  const Task = req.app.get('TaskModel');
+  const task = await Task.findOne({ where: { id: req.params.id, userId: req.session.user.id } });
+  if (task) {
+    await task.update({ status: task.status === 'completed' ? 'pending' : 'completed' });
   }
   res.redirect('/tasks');
 });

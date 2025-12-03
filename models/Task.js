@@ -1,3 +1,4 @@
+
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
@@ -7,16 +8,25 @@ module.exports = (sequelize) => {
       primaryKey: true,
       autoIncrement: true
     },
-    title: { type: DataTypes.STRING, allowNull: false },
+    title: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
     description: DataTypes.TEXT,
     dueDate: DataTypes.DATEONLY,
-    status: { type: DataTypes.STRING, defaultValue: 'pending' },
-    userId: { type: DataTypes.STRING, allowNull: false }
+    status: {
+      type: DataTypes.ENUM('pending', 'completed'),
+      defaultValue: 'pending'
+    },
+    userId: {
+      type: DataTypes.STRING,
+      allowNull: false
+    }
   }, {
-    tableName: 'tasks',
-    freezeTableName: true,
+    tableName: 'Tasks',
     timestamps: true
   });
 
+  
   return Task;
 };
