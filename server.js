@@ -16,7 +16,24 @@ mongoose.connect(process.env.MONGO_URI)
   .catch(err => console.error('MongoDB error:', err));
 
 // Neon SQL for tasks (no Sequelize — direct driver)
-const sql = neon(process.env.DATABASE_URL);
+const sequelize = new Sequelize(process.env.DATABASE_URL, {
+  dialect: 'postgres',
+  dialectModule: require('pg'),  // ← THIS LINE FIXES THE PG PACKAGE ERROR
+  protocol: 'postgres',
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false
+    }
+  },
+  logging: false,
+  pool: {
+    max: 1,  // Vercel serverless limit
+    min: 0,
+    idle: 10000,
+    acquire: 30000
+  }
+});
 
 // Create tasks table (if not exists)
 sql`CREATE TABLE IF NOT EXISTS tasks (
