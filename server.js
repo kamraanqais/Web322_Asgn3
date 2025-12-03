@@ -14,12 +14,15 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.error('MongoDB error:', err));
 
-// PostgreSQL - NEON
+// PostgreSQL
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
   protocol: 'postgres',
   dialectOptions: {
-    ssl: { require: true, rejectUnauthorized: false }
+    ssl: {
+      require: true,
+      rejectUnauthorized: false
+    }
   },
   logging: false
 });
