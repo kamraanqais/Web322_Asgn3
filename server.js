@@ -1,9 +1,6 @@
 /********************************************************************************
 * WEB322 – Assignment 03
-* I declare that this assignment is my own work in accordance with Seneca's
-* Academic Integrity Policy:
-* https://www.senecapolytechnic.ca/about/policies/academic-integrity-policy.html
-* Name: Kamraan Qais          Student ID: YOUR_STUDENT_ID          Date: December 3, 2025
+* Name: Kamraan Qais          Student ID: YOUR_ID          Date: December 3, 2025
 ********************************************************************************/
 
 require('dotenv').config();
@@ -20,7 +17,26 @@ const { requireLogin } = require('./middleware/auth');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware (before routes)
+// MongoDB
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.log('MongoDB error:', err));
+
+require('./models/user');
+
+// PostgreSQL + Task Model
+const sequelize = new Sequelize(process.env.DATABASE_URL, {
+  dialect: 'postgres',
+  dialectOptions: { ssl: { require: true, rejectUnauthorized: false } },
+  logging: false
+});
+
+sequelize.authenticate().then(() => console.log('PostgreSQL connected'));
+
+const Task = require('./models/task')(sequelize);
+app.set('TaskModel', Task); // Share model with all routes
+
+// Middleware
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.static('public'));
@@ -44,13 +60,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Global error handler (catches DB crashes)
-app.use((err, req, res, next) => {
-  console.error('Global error:', err);
-  res.status(500).render('error', { title: 'Error', message: 'Server error. Please try again.' });
-});
-
-// Routes (connections happen lazily inside routes)
+// Routes
 app.use('/', authRoutes);
 app.use('/tasks', requireLogin, taskRoutes);
 
@@ -58,5 +68,8 @@ app.get('/', (req, res) => {
   req.session.user ? res.redirect('/dashboard') : res.redirect('/login');
 });
 
-// Export for Vercel serverless (NO app.listen — Vercel handles it)
-module.exports = app;
+sequelize.sync().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+});
