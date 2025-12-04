@@ -1,13 +1,59 @@
+// routes/tasks.js — FINAL VERIFIED VERSION (No Global Connections)
 const express = require('express');
 const router = express.Router();
-const { Sequelize } = require('sequelize');
 
-const sequelize = new Sequelize(process.env.DATABASE_URL, {
+
+const initSequelize = async () => {
+  if (sequelizeInstance) return Task;
+
+  const { Sequelize } = require('sequelize');
+
+  // Force correct protocol + SSL settings that Neon + Vercel love
+  const dbUrl = process.env.DATABASE_URL.replace(/^postgres:/, 'postgresql:');
+
+  sequelizeInstance = new Sequelize(process.env.DATABASE_URL, {
     dialect: 'postgres',
-    dialectOptions: { ssl: { require: true, rejectUnauthorized: false } },
-    logging: false
-});
-const Task = require('../models/Task')(sequelize);
+    logging: false,
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false   // Critical for Neon on Vercel
+      }
+    },
+    pool: { max: 1, min: 0, acquire: 30000, idle: 10000 },
+    retry: { max: 3 }   // Auto retry connection
+  });
+
+  // RETRY LOGIC + DETAILED LOGS
+  let attempts = 3;
+  while (attempts > 0) {
+    try {
+      await sequelizeInstance.authenticate();
+      console.log('PostgreSQL connected successfully on Vercel');
+      break;
+    } catch (err) {
+      attempts--;
+      console.error(`PostgreSQL connection attempt failed (${3 - attempts}/3):`, err.message);
+      if (attempts === 0) {
+        console.error('All connection attempts failed:', err);
+        throw err;
+      }
+      await new Promise(res => setTimeout(res, 2000)); // wait 2s before retry
+    }
+  }
+
+  // EXACT filename with .js extension (Vercel is case-sensitive)
+  Task = require('../models/Task.js')(sequelize);
+
+  return Task;
+};
+
+// Safe date helper
+const safeDate = (dateStr) => {
+  if (!dateStr || dateStr === '' || dateStr === 'Invalid date') return null;
+  const date = new Date(dateStr);
+  return isNaN(date.getTime()) ? null : date.toISOString().split('T')[0];
+};
 
 // GET all tasks
 router.get('/', async (req, res) => {
