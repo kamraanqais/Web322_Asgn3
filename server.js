@@ -55,5 +55,9 @@ app.get('/', (req, res) => {
   req.session.user ? res.redirect('/dashboard') : res.redirect('/login');
 });
 
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+});
 // Vercel serverless export (NO app.listen)
 module.exports = app;
