@@ -16,7 +16,7 @@ const initSequelize = async () => {
       pool: { max: 1, min: 0, acquire: 30000, idle: 10000 }  // Serverless pool limits
     });
     await sequelizeInstance.authenticate();
-    Task = require('../models/Task')(sequelizeInstance);
+    Task = require('../models/task')(sequelizeInstance);
   }
   return Task;
 };
