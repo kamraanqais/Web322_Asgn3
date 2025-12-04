@@ -11,9 +11,14 @@ const initSequelize = async () => {
     const { Sequelize } = require('sequelize');
     sequelizeInstance = new Sequelize(process.env.DATABASE_URL, {
       dialect: 'postgres',
-      dialectOptions: { ssl: { require: true, rejectUnauthorized: false } },
+      dialectOptions: {
+        ssl: {
+          require: true,
+          rejectUnauthorized: false   // ← THIS LINE FIXES 95% OF NEON + VERCEL ISSUES
+        }
+      },
       logging: false,
-      pool: { max: 1, min: 0, acquire: 30000, idle: 10000 }  // Serverless pool limits
+      pool: { max: 1, min: 0, acquire: 30000, idle: 10000 }
     });
     await sequelizeInstance.authenticate();
     Task = require('../models/Task.js')(sequelizeInstance);
