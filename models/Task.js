@@ -1,4 +1,4 @@
-// models/task.js — FINAL FIXED VERSION
+// models/task.js — FINAL UPDATED VERSION
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
@@ -12,21 +12,25 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING,
       allowNull: false
     },
-    description: DataTypes.TEXT,
-    dueDate: {  
-      type: DataTypes.STRING,  // Store as 'YYYY-MM-DD' string
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    dueDate: {
+      type: DataTypes.DATEONLY,   // <-- Correct type for YYYY-MM-DD
       allowNull: true
     },
     status: {
-      type: DataTypes.ENUM('pending', 'completed'),
-      defaultValue: 'pending'
+      type: DataTypes.ENUM("pending", "completed"),
+      allowNull: false,
+      defaultValue: "pending"
     },
     userId: {
       type: DataTypes.STRING,
       allowNull: false
     }
   }, {
-    tableName: 'Tasks',
+    tableName: "Tasks",
     timestamps: true
   });
 

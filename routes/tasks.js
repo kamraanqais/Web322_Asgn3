@@ -4,11 +4,11 @@ const router = express.Router();
 let sequelize = null;
 let Task = null;
 
-// Initialize Sequelize ONCE (serverless-safe)
+// Initialize Sequelize once (serverless-safe)
 async function initDB() {
-  if (sequelize) return sequelize;
+  if (sequelize && Task) return sequelize;
 
-  const { Sequelize } = require("sequelize");
+  const { Sequelize, DataTypes } = require("sequelize");
   const pg = require("pg");
 
   const url = process.env.DATABASE_URL;
@@ -31,22 +31,23 @@ async function initDB() {
 
   try {
     await sequelize.authenticate();
-    console.log("PostgreSQL connected.");
+    console.log("✅ PostgreSQL connected.");
   } catch (err) {
-    console.error("PostgreSQL FAILED:", err);
+    console.error("❌ PostgreSQL FAILED:", err);
+    sequelize = null;
     throw err;
   }
 
-  // Load model
-  Task = require("../models/Task")(sequelize);
+  // Load Task model (IMPORTANT FIX: pass DataTypes)
+  Task = require("../models/Task")(sequelize, DataTypes);
 
-  // Sync (safe in serverless)
+  // Sync (safe on Vercel)
   await sequelize.sync();
 
   return sequelize;
 }
 
-// Safe date helper
+// Safe date parser
 const safeDate = (str) => {
   if (!str) return null;
   const d = new Date(str);
@@ -75,11 +76,12 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Add Task
+// Add task form
 router.get("/add", (req, res) => {
   res.render("add-task", { title: "Add Task" });
 });
 
+// POST add
 router.post("/add", async (req, res) => {
   try {
     await initDB();
@@ -104,7 +106,7 @@ router.post("/add", async (req, res) => {
   }
 });
 
-// Edit Task
+// Edit task page
 router.get("/edit/:id", async (req, res) => {
   try {
     await initDB();
@@ -122,6 +124,7 @@ router.get("/edit/:id", async (req, res) => {
   }
 });
 
+// POST edit task
 router.post("/edit/:id", async (req, res) => {
   try {
     await initDB();
@@ -147,7 +150,7 @@ router.post("/edit/:id", async (req, res) => {
   }
 });
 
-// Delete Task
+// Delete task
 router.post("/delete/:id", async (req, res) => {
   try {
     await initDB();
@@ -163,7 +166,7 @@ router.post("/delete/:id", async (req, res) => {
   }
 });
 
-// Toggle status
+// Toggle task status
 router.post("/status/:id", async (req, res) => {
   try {
     await initDB();
