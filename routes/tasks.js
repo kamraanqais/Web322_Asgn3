@@ -8,9 +8,6 @@ const initSequelize = async () => {
 
   const { Sequelize } = require('sequelize');
 
-  // Force correct protocol + SSL settings that Neon + Vercel love
-  const dbUrl = process.env.DATABASE_URL.replace(/^postgres:/, 'postgresql:');
-
   sequelizeInstance = new Sequelize(process.env.DATABASE_URL, {
     dialect: 'postgres',
     logging: false,
@@ -20,30 +17,10 @@ const initSequelize = async () => {
         rejectUnauthorized: false   // Critical for Neon on Vercel
       }
     },
-    pool: { max: 1, min: 0, acquire: 30000, idle: 10000 },
-    retry: { max: 3 }   // Auto retry connection
   });
 
-  // RETRY LOGIC + DETAILED LOGS
-  let attempts = 3;
-  while (attempts > 0) {
-    try {
-      await sequelizeInstance.authenticate();
-      console.log('PostgreSQL connected successfully on Vercel');
-      break;
-    } catch (err) {
-      attempts--;
-      console.error(`PostgreSQL connection attempt failed (${3 - attempts}/3):`, err.message);
-      if (attempts === 0) {
-        console.error('All connection attempts failed:', err);
-        throw err;
-      }
-      await new Promise(res => setTimeout(res, 2000)); // wait 2s before retry
-    }
-  }
-
   // EXACT filename with .js extension (Vercel is case-sensitive)
-  Task = require('../models/Task.js')(sequelize);
+  Task = require('../models/Task.js')(sequelizeInstance);
 
   return Task;
 };
