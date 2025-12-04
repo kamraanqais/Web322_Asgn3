@@ -19,7 +19,7 @@ const initMongoose = async () => {
         connectTimeoutMS: 10000
       });
       console.log('MongoDB connected successfully');
-      User = require('../models/User');
+      User = require('../models/User.js');
       console.log('User model loaded');
     } catch (err) {
       console.error('MongoDB connection FAILED:', err.message);

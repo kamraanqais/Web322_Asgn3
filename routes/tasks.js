@@ -36,7 +36,7 @@ const initSequelize = async () => {
       throw err;
     }
 
-    Task = require('../models/Task')(sequelizeInstance);
+    Task = require('../models/Task.js')(sequelizeInstance);   // Add .js extension
   }
   return Task;
 
