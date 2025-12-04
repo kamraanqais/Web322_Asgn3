@@ -2,26 +2,31 @@
 const express = require('express');
 const router = express.Router();
 
+// Lazy-load Sequelize only when needed (serverless-safe)
+let sequelizeInstance = null;
+let Task = null;
 
 const initSequelize = async () => {
-  if (sequelizeInstance) return Task;
+  if (!sequelizeInstance) {
+    const { Sequelize } = require('sequelize');
+    sequelizeInstance = new Sequelize(process.env.DATABASE_URL, {
+      dialect: 'postgres',
+      dialectOptions: { ssl: { require: true, rejectUnauthorized: false } },
+      logging: (msg) => console.log('Sequelize:', msg),  // ← Logs all SQL + connections
+      pool: { max: 1, min: 0, acquire: 30000, idle: 10000 }
+    });
 
-  const { Sequelize } = require('sequelize');
+    try {
+      await sequelizeInstance.authenticate();
+      console.log('PostgreSQL connected successfully');
+    } catch (err) {
+      console.error('PostgreSQL connection FAILED:', err.message);
+      console.error('Full error:', err);
+      throw err;
+    }
 
-  sequelizeInstance = new Sequelize(process.env.DATABASE_URL, {
-    dialect: 'postgres',
-    logging: false,
-    dialectOptions: {
-      ssl: {
-        require: true,
-        rejectUnauthorized: false   // Critical for Neon on Vercel
-      }
-    },
-  });
-
-  // EXACT filename with .js extension (Vercel is case-sensitive)
-  Task = require('../models/Task.js')(sequelizeInstance);
-
+    Task = require('../models/Task')(sequelizeInstance);
+  }
   return Task;
 };
 
@@ -32,10 +37,18 @@ const safeDate = (dateStr) => {
   return isNaN(date.getTime()) ? null : date.toISOString().split('T')[0];
 };
 
-// GET all tasks
+// GET tasks
 router.get('/', async (req, res) => {
-    const tasks = await Task.findAll({ where: { userId: req.session.user.id } });
+  try {
+    const tasks = await Task.findAll({
+      where: { userId: req.session.user.id },
+      order: [['createdAt', 'DESC']]
+    });
     res.render('tasks', { tasks });
+  } catch (err) {
+    console.error('Tasks error:', err);
+    res.status(500).render('error', { title: 'Error', message: 'Failed to load tasks' });
+  }
 });
 
 router.get('/add', (req, res) => res.render('add-task', { title: 'Add Task' }));
