@@ -13,7 +13,7 @@ module.exports = (sequelize) => {
       allowNull: false
     },
     description: DataTypes.TEXT,
-    dueDate: {  // ← FIXED: Use STRING to avoid date parsing crashes
+    dueDate: {  
       type: DataTypes.STRING,  // Store as 'YYYY-MM-DD' string
       allowNull: true
     },
