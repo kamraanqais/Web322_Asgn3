@@ -1,142 +1,187 @@
-// routes/tasks.js — FINAL VERIFIED VERSION (No Global Connections)
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 
-// Lazy-load Sequelize only when needed (serverless-safe)
-let sequelizeInstance = null;
+let sequelize = null;
 let Task = null;
 
-const initSequelize = async () => {
-  if (!sequelizeInstance) {
-    const { Sequelize } = require("sequelize");
+// Initialize Sequelize ONCE (serverless-safe)
+async function initDB() {
+  if (sequelize) return sequelize;
 
-function initSequelize() {
-    const url = process.env.DATABASE_URL;
+  const { Sequelize } = require("sequelize");
+  const pg = require("pg");
 
-    if (!url) {
-        console.error("❌ DATABASE_URL is missing!");
-        throw new Error("DATABASE_URL is NULL");
-    }
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    console.error("❌ DATABASE_URL missing");
+    throw new Error("DATABASE_URL is NULL");
+  }
 
-    return new Sequelize(url, {
-        dialect: "postgres",
-        dialectModule: require("pg"),
-        logging: false,
-    });
+  sequelize = new Sequelize(url, {
+    dialect: "postgres",
+    dialectModule: pg,
+    logging: false,
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false,
+      },
+    },
+  });
+
+  try {
+    await sequelize.authenticate();
+    console.log("PostgreSQL connected.");
+  } catch (err) {
+    console.error("PostgreSQL FAILED:", err);
+    throw err;
+  }
+
+  // Load model
+  Task = require("../models/Task")(sequelize);
+
+  // Sync (safe in serverless)
+  await sequelize.sync();
+
+  return sequelize;
 }
 
-
-    try {
-      await sequelizeInstance.authenticate();
-      console.log('PostgreSQL connected successfully');
-    } catch (err) {
-      console.error('PostgreSQL connection FAILED:', err.message);
-      console.error('Full error:', err);
-      throw err;
-    }
-
-    Task = require('../models/Task')(sequelizeInstance);
-  }
-  return Task;
-};
-
 // Safe date helper
-const safeDate = (dateStr) => {
-  if (!dateStr || dateStr === '' || dateStr === 'Invalid date') return null;
-  const date = new Date(dateStr);
-  return isNaN(date.getTime()) ? null : date.toISOString().split('T')[0];
+const safeDate = (str) => {
+  if (!str) return null;
+  const d = new Date(str);
+  return isNaN(d) ? null : d.toISOString().split("T")[0];
 };
 
-// GET tasks
-router.get('/', async (req, res) => {
+// ================= ROUTES ===================
+
+// GET /tasks
+router.get("/", async (req, res) => {
   try {
-    await initSequelize();   // ← REQUIRED
+    await initDB();
 
     const tasks = await Task.findAll({
       where: { userId: req.session.user.id },
-      order: [['createdAt', 'DESC']]
+      order: [["createdAt", "DESC"]],
     });
 
-    res.render('tasks', { tasks });
+    res.render("tasks", { tasks });
   } catch (err) {
-    console.error('Tasks error:', err);
-    res.status(500).render('error', { title: 'Error', message: 'Failed to load tasks' });
+    console.error("Tasks error:", err);
+    res.status(500).render("error", {
+      title: "Error",
+      message: "Failed to load tasks",
+    });
   }
 });
 
+// Add Task
+router.get("/add", (req, res) => {
+  res.render("add-task", { title: "Add Task" });
+});
 
-
-router.get('/add', (req, res) => res.render('add-task', { title: 'Add Task' }));
-
-router.post('/add', async (req, res) => {
+router.post("/add", async (req, res) => {
   try {
-    await initSequelize();
+    await initDB();
+
     const { title, description, dueDate } = req.body;
-    if (!title?.trim()) return res.redirect('/tasks?error=Title required');
+
+    if (!title?.trim())
+      return res.redirect("/tasks?error=Title required");
+
     await Task.create({
       title: title.trim(),
       description: description?.trim() || null,
-      dueDate: safeDate(dueDate),  // ← FIXED: Safe parsing
-      status: 'pending',
-      userId: req.session.user.id
+      dueDate: safeDate(dueDate),
+      status: "pending",
+      userId: req.session.user.id,
     });
-    res.redirect('/tasks?success=Task added');
+
+    res.redirect("/tasks?success=Task added");
   } catch (err) {
-    console.error('Add task error:', err);
-    res.redirect('/tasks?error=Failed to add task');
+    console.error("Add task error:", err);
+    res.redirect("/tasks?error=Failed to add task");
   }
 });
 
-router.get('/edit/:id', async (req, res) => {
+// Edit Task
+router.get("/edit/:id", async (req, res) => {
   try {
-    await initSequelize();
-    const task = await Task.findOne({ where: { id: req.params.id, userId: req.session.user.id } });
-    if (!task) return res.redirect('/tasks?error=Not found');
-    res.render('edit-task', { task, title: 'Edit Task' });
+    await initDB();
+
+    const task = await Task.findOne({
+      where: { id: req.params.id, userId: req.session.user.id },
+    });
+
+    if (!task) return res.redirect("/tasks?error=Not found");
+
+    res.render("edit-task", { task, title: "Edit Task" });
   } catch (err) {
-    console.error('Edit load error:', err);
-    res.redirect('/tasks?error=Failed to load task');
+    console.error("Edit task load error:", err);
+    res.redirect("/tasks?error=Failed to load task");
   }
 });
 
-router.post('/edit/:id', async (req, res) => {
+router.post("/edit/:id", async (req, res) => {
   try {
-    await initSequelize();
+    await initDB();
+
     const { title, description, dueDate } = req.body;
-    if (!title?.trim()) return res.redirect(`/tasks/edit/${req.params.id}?error=Title required`);
+
+    if (!title?.trim())
+      return res.redirect(`/tasks/edit/${req.params.id}?error=Title required`);
+
     await Task.update(
-      { title: title.trim(), description: description?.trim() || null, dueDate: safeDate(dueDate) },  // ← FIXED
+      {
+        title: title.trim(),
+        description: description?.trim() || null,
+        dueDate: safeDate(dueDate),
+      },
       { where: { id: req.params.id, userId: req.session.user.id } }
     );
-    res.redirect('/tasks?success=Task updated');
+
+    res.redirect("/tasks?success=Task updated");
   } catch (err) {
-    console.error('Edit update error:', err);
-    res.redirect('/tasks?error=Failed to update task');
+    console.error("Edit update error:", err);
+    res.redirect("/tasks?error=Failed to update");
   }
 });
 
-router.post('/delete/:id', async (req, res) => {
+// Delete Task
+router.post("/delete/:id", async (req, res) => {
   try {
-    await initSequelize();
-    await Task.destroy({ where: { id: req.params.id, userId: req.session.user.id } });
-    res.redirect('/tasks?success=Task deleted');
+    await initDB();
+
+    await Task.destroy({
+      where: { id: req.params.id, userId: req.session.user.id },
+    });
+
+    res.redirect("/tasks?success=Task deleted");
   } catch (err) {
-    console.error('Delete error:', err);
-    res.redirect('/tasks?error=Failed to delete task');
+    console.error("Delete error:", err);
+    res.redirect("/tasks?error=Failed to delete");
   }
 });
 
-router.post('/status/:id', async (req, res) => {
+// Toggle status
+router.post("/status/:id", async (req, res) => {
   try {
-    await initSequelize();
-    const task = await Task.findOne({ where: { id: req.params.id, userId: req.session.user.id } });
+    await initDB();
+
+    const task = await Task.findOne({
+      where: { id: req.params.id, userId: req.session.user.id },
+    });
+
     if (task) {
-      await task.update({ status: task.status === 'completed' ? 'pending' : 'completed' });
+      await task.update({
+        status: task.status === "completed" ? "pending" : "completed",
+      });
     }
-    res.redirect('/tasks');
+
+    res.redirect("/tasks");
   } catch (err) {
-    console.error('Status error:', err);
-    res.redirect('/tasks?error=Failed to update status');
+    console.error("Status error:", err);
+    res.redirect("/tasks?error=Failed to update status");
   }
 });
 
