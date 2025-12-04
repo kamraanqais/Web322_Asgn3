@@ -7,36 +7,26 @@ let sequelizeInstance = null;
 let Task = null;
 
 const initSequelize = async () => {
-  if (sequelizeInstance) return Task;
+  if (!sequelizeInstance) {
+    const { Sequelize } = require('sequelize');
+    sequelizeInstance = new Sequelize(process.env.DATABASE_URL, {
+      dialect: 'postgres',
+      dialectOptions: { ssl: { require: true, rejectUnauthorized: false } },
+      logging: (msg) => console.log('Sequelize:', msg),  // ← Logs all SQL + connections
+      pool: { max: 1, min: 0, acquire: 30000, idle: 10000 }
+    });
 
-  const { Sequelize } = require('sequelize');
+    try {
+      await sequelizeInstance.authenticate();
+      console.log('PostgreSQL connected successfully');
+    } catch (err) {
+      console.error('PostgreSQL connection FAILED:', err.message);
+      console.error('Full error:', err);
+      throw err;
+    }
 
-  // THIS LINE IS THE MAGIC — forces Neon + Vercel to work 100%
-  const sequelize = new Sequelize(process.env.DATABASE_URL, {
-    dialect: 'postgres',
-    dialectOptions: {
-      ssl: {
-        require: true,
-        rejectUnauthorized: false
-      }
-    },
-    logging: false,
-    // These two lines are the real fix for Vercel cold starts
-    define: { freezeTableName: true },
-    pool: { max: 2, min: 0, acquire: 30000, idle: 10000 }
-  });
-
-  try {
-    await sequelize.authenticate();
-    console.log('Neon DB connected on Vercel');
-  } catch (err) {
-    console.error('Neon connection failed:', err.message);
-    throw err;
+    Task = require('../models/Task')(sequelizeInstance);
   }
-
-  // Force the exact filename with .js extension (Vercel Linux is case-sensitive)
-  Task = require('../models/Task.js')(sequelize);
-  sequelizeInstance = sequelize;
   return Task;
 };
 
