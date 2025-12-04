@@ -2,9 +2,6 @@
 const express = require('express');
 const router = express.Router();
 
-// Lazy-load Sequelize only when needed (serverless-safe)
-let sequelizeInstance = null;
-let Task = null;
 
 const initSequelize = async () => {
   if (sequelizeInstance) return Task;
@@ -14,7 +11,7 @@ const initSequelize = async () => {
   // Force correct protocol + SSL settings that Neon + Vercel love
   const dbUrl = process.env.DATABASE_URL.replace(/^postgres:/, 'postgresql:');
 
-  sequelizeInstance = new Sequelize(dbUrl, {
+  sequelizeInstance = new Sequelize(process.env.DATABASE_URL, {
     dialect: 'postgres',
     logging: false,
     dialectOptions: {
@@ -46,7 +43,7 @@ const initSequelize = async () => {
   }
 
   // EXACT filename with .js extension (Vercel is case-sensitive)
-  Task = require('../models/Task.js')(sequelizeInstance);
+  Task = require('../models/Task.js')(sequelize);
 
   return Task;
 };
