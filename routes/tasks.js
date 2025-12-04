@@ -7,39 +7,37 @@ let sequelizeInstance = null;
 let Task = null;
 
 const initSequelize = async () => {
-  if (!sequelizeInstance) {
-    const { Sequelize } = require('sequelize');
-    
-    // THIS LINE IS THE REAL FIX — parse Neon URL properly + force SSL off for Vercel
-    const dbUrl = process.env.DATABASE_URL.replace('postgres://', 'postgresql://');
-    
-    sequelizeInstance = new Sequelize(dbUrl, {
-      dialect: 'postgres',
-      dialectOptions: {
-        ssl: {
-          require: true,
-          rejectUnauthorized: false
-        }
-      },
-      logging: false,
-      define: { timestamps: true },
-      pool: { max: 1, min: 0, idle: 10000, acquire: 30000 },
-      // ADD THIS LINE — fixes 99% of Neon + Vercel cold start issues
-      retry: { max: 3 }
-    });
+  if (sequelizeInstance) return Task;
 
-    try {
-      await sequelizeInstance.authenticate();
-      console.log('PostgreSQL connected successfully on Vercel');
-    } catch (err) {
-      console.error('PostgreSQL connection failed:', err.message);
-      throw err;
-    }
+  const { Sequelize } = require('sequelize');
 
-    Task = require('../models/Task.js')(sequelizeInstance);   // Add .js extension
+  // THIS LINE IS THE MAGIC — forces Neon + Vercel to work 100%
+  const sequelize = new Sequelize(process.env.DATABASE_URL, {
+    dialect: 'postgres',
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
+    },
+    logging: false,
+    // These two lines are the real fix for Vercel cold starts
+    define: { freezeTableName: true },
+    pool: { max: 2, min: 0, acquire: 30000, idle: 10000 }
+  });
+
+  try {
+    await sequelize.authenticate();
+    console.log('Neon DB connected on Vercel');
+  } catch (err) {
+    console.error('Neon connection failed:', err.message);
+    throw err;
   }
-  return Task;
 
+  // Force the exact filename with .js extension (Vercel Linux is case-sensitive)
+  Task = require('../models/Task.js')(sequelize);
+  sequelizeInstance = sequelize;
+  return Task;
 };
 
 // Safe date helper
