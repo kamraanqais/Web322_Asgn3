@@ -8,13 +8,23 @@ let Task = null;
 
 const initSequelize = async () => {
   if (!sequelizeInstance) {
-    const { Sequelize } = require('sequelize');
-    sequelizeInstance = new Sequelize(process.env.DATABASE_URL, {
-      dialect: 'postgres',
-      dialectOptions: { ssl: { require: true, rejectUnauthorized: false } },
-      logging: (msg) => console.log('Sequelize:', msg),  // ← Logs all SQL + connections
-      pool: { max: 1, min: 0, acquire: 30000, idle: 10000 }
+    const { Sequelize } = require("sequelize");
+
+function initSequelize() {
+    const url = process.env.DATABASE_URL;
+
+    if (!url) {
+        console.error("❌ DATABASE_URL is missing!");
+        throw new Error("DATABASE_URL is NULL");
+    }
+
+    return new Sequelize(url, {
+        dialect: "postgres",
+        dialectModule: require("pg"),
+        logging: false,
     });
+}
+
 
     try {
       await sequelizeInstance.authenticate();
