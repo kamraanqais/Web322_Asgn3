@@ -1,15 +1,17 @@
+// routes/tasks.js
 const express = require("express");
 const router = express.Router();
 
 let sequelize = null;
 let Task = null;
 
+// ================= DATABASE INIT ===================
 // Initialize Sequelize once (serverless-safe)
 async function initDB() {
   if (sequelize && Task) return sequelize;
 
   const { Sequelize, DataTypes } = require("sequelize");
-  const pg = require("pg");
+  const pg = require("pg"); // Ensure pg is installed
 
   const url = process.env.DATABASE_URL;
   if (!url) {
@@ -38,10 +40,10 @@ async function initDB() {
     throw err;
   }
 
-  // Load Task model (IMPORTANT FIX: pass DataTypes)
+  // Load Task model (pass DataTypes)
   Task = require("../models/Task")(sequelize, DataTypes);
 
-  // Sync (safe on Vercel)
+  // Safe sync for serverless
   await sequelize.sync();
 
   return sequelize;
@@ -56,17 +58,17 @@ const safeDate = (str) => {
 
 // ================= ROUTES ===================
 
-// GET /tasks
+// GET /tasks - list tasks
 router.get("/", async (req, res) => {
   try {
     await initDB();
 
     const tasks = await Task.findAll({
-      where: { userId: req.session.user.id },
+      where: { userId: req.session.user?.id },
       order: [["createdAt", "DESC"]],
     });
 
-    res.render("tasks", { tasks });
+    res.render("tasks", { tasks, title: "Task List" });
   } catch (err) {
     console.error("Tasks error:", err);
     res.status(500).render("error", {
@@ -76,12 +78,12 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Add task form
+// GET /tasks/add - add task form
 router.get("/add", (req, res) => {
   res.render("add-task", { title: "Add Task" });
 });
 
-// POST add
+// POST /tasks/add - add task
 router.post("/add", async (req, res) => {
   try {
     await initDB();
@@ -89,14 +91,14 @@ router.post("/add", async (req, res) => {
     const { title, description, dueDate } = req.body;
 
     if (!title?.trim())
-      return res.redirect("/tasks?error=Title required");
+      return res.redirect("/tasks/add?error=Title required");
 
     await Task.create({
       title: title.trim(),
       description: description?.trim() || null,
       dueDate: safeDate(dueDate),
       status: "pending",
-      userId: req.session.user.id,
+      userId: req.session.user?.id,
     });
 
     res.redirect("/tasks?success=Task added");
@@ -106,16 +108,16 @@ router.post("/add", async (req, res) => {
   }
 });
 
-// Edit task page
+// GET /tasks/edit/:id - edit task form
 router.get("/edit/:id", async (req, res) => {
   try {
     await initDB();
 
     const task = await Task.findOne({
-      where: { id: req.params.id, userId: req.session.user.id },
+      where: { id: req.params.id, userId: req.session.user?.id },
     });
 
-    if (!task) return res.redirect("/tasks?error=Not found");
+    if (!task) return res.redirect("/tasks?error=Task not found");
 
     res.render("edit-task", { task, title: "Edit Task" });
   } catch (err) {
@@ -124,7 +126,7 @@ router.get("/edit/:id", async (req, res) => {
   }
 });
 
-// POST edit task
+// POST /tasks/edit/:id - update task
 router.post("/edit/:id", async (req, res) => {
   try {
     await initDB();
@@ -140,39 +142,39 @@ router.post("/edit/:id", async (req, res) => {
         description: description?.trim() || null,
         dueDate: safeDate(dueDate),
       },
-      { where: { id: req.params.id, userId: req.session.user.id } }
+      { where: { id: req.params.id, userId: req.session.user?.id } }
     );
 
     res.redirect("/tasks?success=Task updated");
   } catch (err) {
     console.error("Edit update error:", err);
-    res.redirect("/tasks?error=Failed to update");
+    res.redirect("/tasks?error=Failed to update task");
   }
 });
 
-// Delete task
+// POST /tasks/delete/:id - delete task
 router.post("/delete/:id", async (req, res) => {
   try {
     await initDB();
 
     await Task.destroy({
-      where: { id: req.params.id, userId: req.session.user.id },
+      where: { id: req.params.id, userId: req.session.user?.id },
     });
 
     res.redirect("/tasks?success=Task deleted");
   } catch (err) {
     console.error("Delete error:", err);
-    res.redirect("/tasks?error=Failed to delete");
+    res.redirect("/tasks?error=Failed to delete task");
   }
 });
 
-// Toggle task status
+// POST /tasks/status/:id - toggle task status
 router.post("/status/:id", async (req, res) => {
   try {
     await initDB();
 
     const task = await Task.findOne({
-      where: { id: req.params.id, userId: req.session.user.id },
+      where: { id: req.params.id, userId: req.session.user?.id },
     });
 
     if (task) {
