@@ -40,17 +40,20 @@ const safeDate = (dateStr) => {
 // GET tasks
 router.get('/', async (req, res) => {
   try {
-    await initSequelize();   // ← You forgot this line
+    await initSequelize();   // ← REQUIRED
+
     const tasks = await Task.findAll({
       where: { userId: req.session.user.id },
       order: [['createdAt', 'DESC']]
     });
+
     res.render('tasks', { tasks });
   } catch (err) {
     console.error('Tasks error:', err);
     res.status(500).render('error', { title: 'Error', message: 'Failed to load tasks' });
   }
 });
+
 
 
 router.get('/add', (req, res) => res.render('add-task', { title: 'Add Task' }));
