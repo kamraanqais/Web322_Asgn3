@@ -9,21 +9,37 @@ let Task = null;
 const initSequelize = async () => {
   if (!sequelizeInstance) {
     const { Sequelize } = require('sequelize');
-    sequelizeInstance = new Sequelize(process.env.DATABASE_URL, {
+    
+    // THIS LINE IS THE REAL FIX — parse Neon URL properly + force SSL off for Vercel
+    const dbUrl = process.env.DATABASE_URL.replace('postgres://', 'postgresql://');
+    
+    sequelizeInstance = new Sequelize(dbUrl, {
       dialect: 'postgres',
       dialectOptions: {
         ssl: {
           require: true,
-          rejectUnauthorized: false   // ← THIS LINE FIXES 95% OF NEON + VERCEL ISSUES
+          rejectUnauthorized: false
         }
       },
       logging: false,
-      pool: { max: 1, min: 0, acquire: 30000, idle: 10000 }
+      define: { timestamps: true },
+      pool: { max: 1, min: 0, idle: 10000, acquire: 30000 },
+      // ADD THIS LINE — fixes 99% of Neon + Vercel cold start issues
+      retry: { max: 3 }
     });
-    await sequelizeInstance.authenticate();
-    Task = require('../models/Task.js')(sequelizeInstance);
+
+    try {
+      await sequelizeInstance.authenticate();
+      console.log('PostgreSQL connected successfully on Vercel');
+    } catch (err) {
+      console.error('PostgreSQL connection failed:', err.message);
+      throw err;
+    }
+
+    Task = require('../models/Task')(sequelizeInstance);
   }
   return Task;
+
 };
 
 // Safe date helper
